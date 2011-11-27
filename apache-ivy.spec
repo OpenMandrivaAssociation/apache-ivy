@@ -1,6 +1,6 @@
 Name:           apache-ivy
 Version:        2.1.0
-Release:        2
+Release:        4
 Summary:        Java-based dependency manager
 
 Group:          Development/Java
