@@ -98,3 +98,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_javadocdir}/*
 
 
+
+
+%changelog
+* Sun Nov 27 2011 Guilherme Moro <guilherme@mandriva.com> 2.1.0-4
++ Revision: 733821
+- rebuild
+- imported package apache-ivy
+
