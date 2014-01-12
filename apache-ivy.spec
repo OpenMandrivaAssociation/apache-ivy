@@ -1,7 +1,7 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:           apache-ivy
 Version:        2.3.0
-Release:        3.0%{?dist}
+Release:        3.1%{?dist}
 Summary:        Java-based dependency manager
 
 
