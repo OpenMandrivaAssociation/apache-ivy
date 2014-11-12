@@ -1,28 +1,32 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:           apache-ivy
 Version:        2.3.0
-Release:        3.1%{?dist}
+Release:        8%{?dist}
 Summary:        Java-based dependency manager
-
 
 License:        ASL 2.0
 URL:            http://ant.apache.org/ivy/
 Source0:        http://www.apache.org/dist/ant/ivy/%{version}/%{name}-%{version}-src.tar.gz
 BuildArch:      noarch
 
+# Non-upstreamable.  Add /etc/ivy/ivysettings.xml at the end list of
+# settings files Ivy tries to load.  This file will be used only as
+# last resort, when no other setting files exist.
+Patch0:         %{name}-global-settings.patch
+
 Provides:       ivy = %{version}-%{release}
 
 BuildRequires:  ant
+BuildRequires:  ant-contrib
+BuildRequires:  ant-testutil
+BuildRequires:  apache-commons-vfs
+BuildRequires:  bouncycastle
+BuildRequires:  bouncycastle-pg
 BuildRequires:  jakarta-commons-httpclient
 BuildRequires:  jsch
 BuildRequires:  jakarta-oro
-BuildRequires:  java-devel >= 1.5
-BuildRequires:  jpackage-utils
-Requires:       jpackage-utils
-Requires:       jakarta-oro
-Requires:       jsch
-Requires:       ant
-Requires:       jakarta-commons-httpclient
+BuildRequires:  ivy-local
+BuildRequires:  maven-local
 
 %description
 Apache Ivy is a tool for managing (recording, tracking, resolving and
@@ -34,15 +38,14 @@ reporting and publication.
 
 %package javadoc
 Summary:        API Documentation for ivy
-
-Requires:       %{name} = %{version}-%{release}
-Requires:       jpackage-utils
+Group:          Development/Tools
 
 %description javadoc
 JavaDoc documentation for %{name}
 
 %prep
 %setup -q
+%patch0
 
 # Fix messed-up encodings
 for F in RELEASE_NOTES README LICENSE NOTICE CHANGES.txt
@@ -51,52 +54,58 @@ do
         touch -r $F $F.utf8
         mv $F.utf8 $F
 done
-rm -fr src/java/org/apache/ivy/plugins/signer/bouncycastle
+# ant-trax has been obsoleted, use main ant package
+sed -i s/ant-trax/ant/ ivy.xml
 
-%build
+# Fedora bouncycastle packages provide -jdk16 artifacts only
+sed -i /bouncycastle/s/jdk14/jdk16/ ivy.xml
+
+# Port from commons-vfs 1.x to 2.x
+sed -i "s/commons.vfs/&2/" src/java/org/apache/ivy/plugins/repository/vfs/*
+
 # Remove prebuilt documentation
 rm -rf doc build/doc
 
-# How to properly disable a plugin?
-# we disable vfs plugin since commons-vfs is not available
-rm -rf src/java/org/apache/ivy/plugins/repository/vfs \
-        src/java/org/apache/ivy/plugins/resolver/VfsResolver.java
-sed '/vfs.*=.*org.apache.ivy.plugins.resolver.VfsResolver/d' -i \
-        src/java/org/apache/ivy/core/settings/typedef.properties
-
-# Craft class path
-mkdir -p lib
-build-jar-repository lib ant jakarta-commons-httpclient jakarta-oro jsch 
-
-# Build
-ant /localivy /offline -Dtarget.ivy.bundle.version=%{version} -Dtarget.ivy.bundle.version.qualifier= -Dtarget.ivy.version=%{version} jar javadoc
+%build
+%ant -Divy.mode=local -Divy.settings.file=%{_sysconfdir}/ivy/ivysettings.xml -Dtarget.ivy.bundle.version=%{version} -Dtarget.ivy.bundle.version.qualifier= -Dtarget.ivy.version=%{version} jar javadoc
 
 
 %install
-# Code
-install -d $RPM_BUILD_ROOT%{_javadir}
-install -p -m644 build/artifact/jars/ivy.jar $RPM_BUILD_ROOT%{_javadir}/ivy.jar
-
-# Maven depmap
-%add_maven_depmap org.apache.ivy:ivy:%{version} ivy.jar
-
-# API Documentation
-install -d $RPM_BUILD_ROOT%{_javadocdir}/%{name}
-cp -rp build/doc/reports/api/. $RPM_BUILD_ROOT%{_javadocdir}/%{name}
+%mvn_file : %{name} ivy
+%mvn_artifact ivy.xml build/artifact/jars/ivy.jar
+sed -i "/rawPom/{p;s//effectivePom/g}" .xmvn-reactor
+%mvn_install -J build/doc/reports/api
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/ant.d
 echo "ivy" > $RPM_BUILD_ROOT%{_sysconfdir}/ant.d/%{name}
 
 %files -f .mfiles
-%{_javadir}/*
 %{_sysconfdir}/ant.d/%{name}
-%doc RELEASE_NOTES CHANGES.txt LICENSE NOTICE README
+%doc LICENSE NOTICE RELEASE_NOTES CHANGES.txt README
 
-%files javadoc
-%{_javadocdir}/*
-%doc LICENSE
+%files javadoc -f .mfiles-javadoc
+%doc LICENSE NOTICE
 
 %changelog
+* Thu Jan 16 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 2.3.0-8
+- Build with ivy-local
+- Add patch for global settings
+
+* Thu Jan 02 2014 Michal Srb <msrb@redhat.com> - 2.3.0-7
+- Remove prebuilt documentation in %%prep
+- Install NOTICE file with javadoc subpackage
+
+* Thu Jan 02 2014 Michal Srb <msrb@redhat.com> - 2.3.0-6
+- Restore PGP signing ability
+- Remove unneeded R
+
+* Thu Dec 12 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 2.3.0-5
+- Enable VFS resolver
+
+* Wed Dec  4 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 2.3.0-4
+- Install POM files, resolves: rhbz#1032258
+- Remove explicit requires; auto-requires are in effect now
+
 * Fri Nov  1 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 2.3.0-3
 - Add Maven depmap
 
@@ -129,3 +138,4 @@ echo "ivy" > $RPM_BUILD_ROOT%{_sysconfdir}/ant.d/%{name}
 
 * Mon Nov 09 2009 Lubomir Rintel <lkundrak@v3.sk> - 2.1.0-1
 - Initial Fedora packaging
+
