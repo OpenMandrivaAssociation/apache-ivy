@@ -1,7 +1,7 @@
 %{?_javapackages_macros:%_javapackages_macros}
 Name:           apache-ivy
 Version:        2.3.0
-Release:        8%{?dist}
+Release:        8.1%{?dist}
 Summary:        Java-based dependency manager
 
 License:        ASL 2.0
