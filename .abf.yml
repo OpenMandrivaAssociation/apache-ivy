@@ -1,2 +1,4 @@
-sources:
+removed_sources:
   apache-ivy-2.3.0-src.tar.gz: 244213bd0d0f344e17678ccbc72b341db6c5b9a3
+sources:
+  apache-ivy-2.4.0-src.tar.gz: 1efa73e73b5fc14ef003ff2fcb182f039db33ce2
