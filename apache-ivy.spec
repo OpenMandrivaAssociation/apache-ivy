@@ -4,7 +4,7 @@
 
 Name:           apache-ivy
 Version:        2.4.0
-Release:        9.1
+Release:        9.2
 Summary:        Java-based dependency manager
 
 License:        ASL 2.0
