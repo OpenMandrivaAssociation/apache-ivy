@@ -8,7 +8,7 @@ Release:        9.2
 Summary:        Java-based dependency manager
 
 License:        ASL 2.0
-URL:            http://ant.apache.org/ivy
+URL:            https://ant.apache.org/ivy
 Source0:        http://www.apache.org/dist/ant/ivy/%{version}/%{name}-%{version}-src.tar.gz
 BuildArch:      noarch
 
